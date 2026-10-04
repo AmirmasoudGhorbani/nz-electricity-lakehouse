@@ -4,6 +4,10 @@
 
 A Databricks lakehouse for 30 years of New Zealand wholesale electricity prices: **128 million half-hourly prices** at 317 grid points (October 1996 to August 2026), joined to daily storage in the country's ten main hydro lakes. Built with PySpark and Delta Lake in a bronze → silver → gold design, with incremental loading, data-quality rules, unit tests and a job deployed from this repo as code.
 
+**[Case study →](https://amirghorbani.dev/nz-electricity/)**
+
+![The NZ Electricity Market dashboard in Databricks](docs/img/dashboard-top.png)
+
 ## Architecture
 
 ```mermaid
@@ -37,15 +41,17 @@ flowchart LR
     SP & SR --> GD
 ```
 
+![The job in Databricks: bronze, silver and gold tasks, all succeeded on serverless compute](docs/img/job-run.png)
+
 A **file-arrival trigger** starts the job when a new monthly file lands in the volume. Auto Loader reads only files it hasn't seen, silver processes only new bronze rows and `MERGE`s them in, so re-running is always safe and a revised file replaces the old prices.
 
 ## Findings
 
 | | |
 |---|---|
-| **Low lakes, high prices** | Months when national hydro storage is below 70% of normal average **$152/MWh** at Otahuhu (Auckland), against **$48** when lakes are above 115% of normal. Correlation −0.46 (−0.62 on log prices at Benmore), 339 months. |
+| **Low lakes, high prices** | Months when national hydro storage is below 70% of normal average **$152/MWh** at Otahuhu (Auckland), against **$48** when lakes are above 115% of normal. In August 2024 storage was 49% of normal and the price averaged $452; a month later storage was 112% and the price $80. Correlation −0.46 (−0.62 on log prices at Benmore), 339 months. |
 | **A new price level since 2018** | Annual averages were mostly $40–80/MWh from 1996 to 2017, and $110–200 from 2018. 2024 was the record: $200 on average, $452 in August, and 800 half-hours above $500. Prices are nominal. |
-| **Dry years flip the islands** | Auckland usually pays about $10/MWh more than Benmore in the South Island. In dry years the South Island's hydro is scarce and it flips: in 2008 (storage 75% of normal) Benmore was $19 dearer. The spread tracks storage (r = 0.52). |
+| **Dry years flip the islands** | Auckland usually pays about $8/MWh more than Benmore in the South Island. In dry years the South Island's hydro is scarce and it flips: in 2008 (storage 75% of normal) Benmore was $19 dearer. The spread tracks storage (r = 0.52). |
 | **The 6pm peak** | The evening peak is the dearest half-hour in every season; summer overnight prices averaged $6/MWh over the past year. |
 | **Location** | Over the past year Northland and north Auckland nodes averaged about $3/MWh above Otahuhu, and the Clutha and Manapōuri generation nodes about $11 below: the cost of transmission losses. |
 
@@ -75,6 +81,12 @@ Other checks, run after every load:
 | Silver | `silver_prices_quarantine` | 123,745 |
 | Silver | `silver_grid_points`, `silver_hydro_storage` | reference |
 | Gold | `gold_daily_reference_prices`, `gold_monthly_prices`, `gold_hourly_profile`, `gold_hydro_national`, `gold_price_vs_storage`, `gold_node_premium` | small |
+
+In Unity Catalog, the tables sit in one schema next to the landing-zone volume, and lineage links them through the job to the dashboard:
+
+<img src="docs/img/catalog.png" alt="Catalog Explorer: the nz_electricity schema with its bronze, silver and gold tables" width="300">
+
+![Lineage of gold_price_vs_storage: upstream tables and the job, downstream the dashboard](docs/img/lineage.png)
 
 ## Repository
 
