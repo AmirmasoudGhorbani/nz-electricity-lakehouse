@@ -16,3 +16,6 @@ targets:
   dev:
     mode: development
     default: true
+    presets:
+      # development mode pauses triggers by default; keep the file-arrival trigger live
+      trigger_pause_status: UNPAUSED
