@@ -101,3 +101,21 @@ def test_clean_column_names():
     assert clean_column("Lake level (m)") == "lake_level_m"
     assert clean_column("_source_file") == "_source_file"
     assert clean_column("POC code") == "poc_code"
+
+
+def test_reference_files_found_in_nested_folders(spark, tmp_path):
+    from nzelec.io import read_reference_csv
+    nested = tmp_path / "hydro" / "hydro"                     # what a folder upload can produce
+    nested.mkdir(parents=True)
+    (nested / "SI_TKA_Storage_LakeTekapo.csv").write_text("Date,Active storage (Mm³)\n2024-01-01,500\n")
+    (nested / "FileIndex_Storage.csv").write_text("FileName,SiteCode\nx,TKA\n")
+    df = read_reference_csv(spark, str(tmp_path / "hydro"), "*_Storage_*.csv")
+    assert df.count() == 1 and "active_storage_mm3" in df.columns
+
+
+def test_missing_reference_files_give_a_clear_error(spark, tmp_path):
+    import pytest
+    from nzelec.io import read_reference_csv
+    (tmp_path / "reference").mkdir()
+    with pytest.raises(FileNotFoundError, match="No files matching"):
+        read_reference_csv(spark, str(tmp_path / "reference"), "*NetworkSupplyPoints*.csv")

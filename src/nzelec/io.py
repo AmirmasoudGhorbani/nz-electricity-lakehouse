@@ -52,6 +52,20 @@ def read_prices_batch(spark: SparkSession, path: str) -> DataFrame:
     return with_lineage(spark.read.option("header", "true").schema(PRICE_COLUMNS).csv(path))
 
 
-def read_reference_csv(spark: SparkSession, path: str) -> DataFrame:
-    """Small reference files: read as strings, clean the column names, keep lineage."""
-    return with_clean_columns(with_lineage(spark.read.option("header", "true").csv(path)))
+def read_reference_csv(spark: SparkSession, folder: str, pattern: str = "*.csv") -> DataFrame:
+    """Small reference files: read as strings, clean the column names, keep lineage.
+
+    Searches subfolders too, because uploading a folder through the UI can add an
+    extra level (raw/hydro/hydro/...).
+    """
+    try:
+        df = (spark.read.option("header", "true")
+              .option("recursiveFileLookup", "true")
+              .option("pathGlobFilter", pattern)
+              .csv(folder))
+        df.schema                                   # fail here, not later, if nothing matched
+    except Exception as e:
+        raise FileNotFoundError(
+            f"No files matching '{pattern}' under {folder}. Upload them there (subfolders are fine) "
+            f"and re-run. Original error: {str(e).splitlines()[0]}") from None
+    return with_clean_columns(with_lineage(df))

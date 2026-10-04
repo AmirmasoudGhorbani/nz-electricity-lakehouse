@@ -31,13 +31,13 @@ COMMENT 'Price rows that failed a data-quality rule, with the rules they broke'
 
 def refresh_reference(spark: SparkSession, cfg: Config) -> None:
     """Grid points and hydro storage are small, so they're reloaded in full each run."""
-    grid = read_reference_csv(spark, f"{cfg.raw}/reference/")
+    grid = read_reference_csv(spark, f"{cfg.raw}/reference/", "*NetworkSupplyPoints*.csv")
     grid.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(cfg.table("bronze_grid_points"))
     T.silver_grid_points(grid).write.mode("overwrite").option("overwriteSchema", "true") \
         .saveAsTable(cfg.table("silver_grid_points"))
 
-    hydro = read_reference_csv(spark, f"{cfg.raw}/hydro/*_Storage_*.csv")
-    lakes = read_reference_csv(spark, f"{cfg.raw}/hydro/FileIndex_Storage.csv")
+    hydro = read_reference_csv(spark, f"{cfg.raw}/hydro/", "*_Storage_*.csv")
+    lakes = read_reference_csv(spark, f"{cfg.raw}/hydro/", "FileIndex_Storage.csv")
     hydro.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(cfg.table("bronze_hydro_storage"))
     T.silver_hydro(hydro, lakes).write.mode("overwrite").option("overwriteSchema", "true") \
         .saveAsTable(cfg.table("silver_hydro_storage"))
