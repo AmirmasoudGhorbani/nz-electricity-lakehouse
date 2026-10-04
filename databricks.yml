@@ -1,0 +1,18 @@
+# Databricks Asset Bundle: the job is defined in code and deployed from this repo.
+#   databricks bundle deploy      (or "Deploy" from the bundle panel in a Git folder)
+bundle:
+  name: nz-electricity-lakehouse
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    default: workspace
+  schema:
+    default: nz_electricity
+
+targets:
+  dev:
+    mode: development
+    default: true
