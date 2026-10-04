@@ -13,9 +13,7 @@ variables:
     default: nz_electricity
 
 targets:
+  # A plain target (not "mode: development", which forces triggers to pause), so the
+  # file-arrival trigger is live as soon as the job is deployed.
   dev:
-    mode: development
     default: true
-    presets:
-      # development mode pauses triggers by default; keep the file-arrival trigger live
-      trigger_pause_status: UNPAUSED
